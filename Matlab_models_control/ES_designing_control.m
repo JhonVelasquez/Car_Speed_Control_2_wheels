@@ -1,7 +1,8 @@
+clear all
+close all
+dt=0.016;%1ms
 
-dt=0.010;%1ms
-
-tf_MA=load("ES_transfer_models_A_B.mat").tf_MA;
+tf_MA=load("ES_transfer_models_A_B_fit45.mat").tf_MA;
 %MOTOR A:
 %--------
 
@@ -46,7 +47,7 @@ MA_d_D=MA_d_D_I;
 %--------
 
 %Loading transfer funciton model for MotorB
-tf_MB=load("ES_transfer_models_A_B.mat").tf_MB;
+tf_MB=load("ES_transfer_models_A_B_fit45.mat").tf_MB;
 
 %Obtaining parameters of transfer function
 MB_a1=tf_MB.Numerator;
@@ -55,18 +56,18 @@ MB_b2=tf_MB.Denominator(2);
 MB_b3=tf_MB.Denominator(3);
 
 %Obtaining space states model
-%MB_A=[(-1*MB_b2/MB_b1) (-1*MB_b3/MB_b1);1 0];
-%MB_B=[(MB_a1/MB_b1);0];
-%MB_C=[0 1];
-%MB_D=0;
-%MB_ss=ss(MB_A,MB_B,MB_C,MB_D);
+MB_A=[(-1*MB_b2/MB_b1) (-1*MB_b3/MB_b1);1 0];
+MB_B=[(MB_a1/MB_b1);0];
+MB_C=[0 1];
+MB_D=0;
+MB_ss=ss(MB_A,MB_B,MB_C,MB_D);
 
 %Obtaining discretized space state matrixes
-%ss_disc_MB=c2d(MB_ss,dt);
-%MB_d_A=ss_disc_MB.A;
-%MB_d_B=ss_disc_MB.B;
-%MB_d_C=ss_disc_MB.C;
-%MB_d_D=ss_disc_MB.D;
+ss_disc_MB=c2d(MB_ss,dt);
+MB_d_A=ss_disc_MB.A;
+MB_d_B=ss_disc_MB.B;
+MB_d_C=ss_disc_MB.C;
+MB_d_D=ss_disc_MB.D;
 
 %Obtaining Integral-Plant Space State model
 MB_A_I=[(-1*MB_b2/MB_b1) (-1*MB_b3/MB_b1) 0;1 0 0;0 1 0];
@@ -83,8 +84,8 @@ MB_d_C_I=ss_disc_MB_I.C;
 MB_d_D_I=ss_disc_MB_I.D;
 
 %Obtaining discretized Plant Space State matrixes
-MB_d_A=MB_d_A_I(1:2,1:2);
-MB_d_B=MB_d_B_I(1:2);
+MB_d_A=MB_d_A_I(1:2,1:2)
+MB_d_B=MB_d_B_I(1:2)
 MB_d_C=MB_d_C_I(1:2);
 MB_d_D=MB_d_D_I;
 
@@ -126,8 +127,8 @@ z1_o=exp(s1_o*dt);%25
 z2_o=exp(s2_o*dt);%25
 
 KB = acker(MB_d_A,MB_d_B,[z1 z2]);
-KB_I= acker(MB_d_A_I,MB_d_B_I,[z1 z2 z3]);
-LB= acker(MB_d_A',MB_d_C',[z1_o z2_o])';
+KB_I= acker(MB_d_A_I,MB_d_B_I,[z1 z2 z3])
+LB= acker(MB_d_A',MB_d_C',[z1_o z2_o])'
 
 
 

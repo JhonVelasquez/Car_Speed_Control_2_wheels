@@ -25,6 +25,9 @@ float circle_speed=70;
 float MA_w_ref=0.0;//Izquierdo
 float MB_w_ref=0.0;//Derecho
 
+float transfer_var_1=0.0;//Izquierdo
+float transfer_var_2=0.0;//Derecho
+
 volatile unsigned long timeEncBefMA=0;
 volatile unsigned long timeEncNowMA=0;
 volatile unsigned long timeEncDiferenceMA=1000000;
@@ -134,23 +137,43 @@ float MB_temporal_var_Diference=0.0;
 uint8_t rxBuffer;
 uint8_t cnt_rx;
 uint8_t state_rx=0;
-#define RX_SIZE 20
+#define RX_SIZE 100
 typedef struct {
   uint8_t msg[RX_SIZE];
   int len;
 } queue_commandRx;
-QueueHandle_t xQueue1;
+QueueHandle_t queue_commands_serial;
+QueueHandle_t queue_commands_motor;
 queue_commandRx queueCommandRx;
-queue_commandRx queueCommandTx;
 String stringRecievedMessage;
 String command_string="";
 String number_data_string="";
 int command_int=0;
 int number_data_int=0;
-float * data_float_array;
-
+float * wA_float_array = new float[100];
+float * wB_float_array = new float[100];
+float * dt_float_array = new float[100];
+float * data_float_array = new float[100];
 int enable_plot=0;
-
+int motion_command_state_tx=0;
+int motion_command_state_rx=0;
+int motion_command_state=0;
+int counter_motion_data=0;
+int number_data_motion=0;
+int number_data_motion_wA=0;
+int number_data_motion_wB=0;
+int number_data_motion_dt=0;
+bool first_execute_motion=false;
+unsigned long previousTimeMs = millis();
+unsigned long nowTimeMs = millis();
+enum CarRouteOption{
+  STOP = 0,
+  LINE,
+  CIRCLE,
+  TRACK,
+  EXECUTED,
+  FORCED
+};
 void setup() {
   //ENABLE DRIVER
   pinMode(pinEnableA, OUTPUT);
@@ -171,11 +194,11 @@ void setup() {
   analogWrite(pinPWMB,128);
 
   //vNopDelayMS(1000); // prevents usb driver crash on startup, do not omit this
-  //while(!Serial);  // Wait for Serial terminal to open port before starting program
+  //while(!Serial2);  // Wait for Serial2 terminal to open port before starting program
  
-  //Serial.begin(115200);
-  Serial.begin(9600);
-  //Serial.println("Hello Arduino\n");
+  Serial2.begin(115200);
+  Serial.begin(115200);
+  //Serial2.println("Hello Arduino\n");
   timeEncBefMA=micros();
   timeEncBefMB=micros();
   
@@ -187,15 +210,15 @@ void setup() {
   MA_w_ref=0.0;
   MB_w_ref=0.0;
   //delay(100);
-  digitalWrite(pinEnableB, HIGH);
-  digitalWrite(pinEnableA, HIGH);
 
-  xQueue1 = xQueueCreate( 10, sizeof(queue_commandRx));
+  queue_commands_serial = xQueueCreate( 10, sizeof(queue_commandRx));
+  queue_commands_motor = xQueueCreate( 10, sizeof(int));
   // Se definen las tareas a realizar
   //xTaskCreate(Identificacion, "Task1", 200, NULL, 1, NULL);
-  xTaskCreate(CommandHandler, "Task2", 256, NULL, 1, NULL);
-  xTaskCreate(ControlA, "Task4", 256, NULL, 2, NULL);
-  xTaskCreate(Plot, "Task3", 256, NULL, 3, NULL);
+  xTaskCreate(CommandHandler, "Task2", 256, NULL, 0, NULL);
+  xTaskCreate(ControlMotors, "Task4", 256, NULL, 3 , NULL);
+  xTaskCreate(GenerateRoute, "Task1", 256, NULL, 2, NULL);
+  xTaskCreate(Plot, "Task3", 256, NULL, 1, NULL);
   //vTaskStartScheduler();
 }
 
@@ -208,8 +231,9 @@ void loop() {
 void CommandHandler(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
-    if (Serial.available()) {
-      rxBuffer = Serial.read();
+    if (Serial2.available()) {
+      rxBuffer = Serial2.read();
+      Serial.write(rxBuffer);
       if (rxBuffer == '$' && state_rx==0) { // start of command
         cnt_rx = 0;
         state_rx=1;
@@ -222,7 +246,7 @@ void CommandHandler(void* pvParameters) {
         if(state_rx==1){
           queueCommandRx.msg[cnt_rx] = rxBuffer;
           queueCommandRx.len = cnt_rx+1;
-          xQueueSend(xQueue1, &queueCommandRx, portMAX_DELAY);
+          xQueueSend(queue_commands_serial, &queueCommandRx, portMAX_DELAY);
         }
         state_rx=0;
       }
@@ -234,7 +258,7 @@ void CommandHandler(void* pvParameters) {
       }   
     }
     
-    if(xQueueReceive(xQueue1,&queueCommandRx,0) == pdPASS ){
+    if(xQueueReceive(queue_commands_serial,&queueCommandRx,0) == pdPASS ){
 
       //Split string and get comand code, number of data, and data;
       char *temp = queueCommandRx.msg+1;
@@ -245,8 +269,7 @@ void CommandHandler(void* pvParameters) {
       command_string="";
       number_data_string="";
       int cnt = 0;
-      while (p_rxData != NULL)
-      {
+      while (p_rxData != NULL){
           if (cnt == 0) {
               command_string=p_rxData;
               command_int=command_string.toFloat();
@@ -254,7 +277,7 @@ void CommandHandler(void* pvParameters) {
           else if (cnt == 1) {
               number_data_string=p_rxData;
               number_data_int=number_data_string.toFloat();
-              data_float_array= new float[number_data_int];
+              //data_float_array= new float[number_data_int];
           }
           else {
               stringRecievedMessage=p_rxData;
@@ -263,38 +286,166 @@ void CommandHandler(void* pvParameters) {
           p_rxData = strtok(NULL, ":");
           cnt++;
       }
-
-      //printing received data
-      //Serial.print("Command code: ");
-      //Serial.println(command_string);
-      //Serial.print("Number of data: ");
-      //Serial.println(number_data_string);
-      for (int i = 0; i < number_data_int; ++i) {
-        //Serial.print("D[");
-        //Serial.print(i);
-        //Serial.print("] : ");
-        //Serial.println(data_float_array[i]);
-      }
+      
+      //printReceievedCommand();
       
       switch(command_int){
-        case 1:
-          draw_line_constant_velocity(data_float_array[0]); // $1:1:1.5;
+        case 0: //  STOP MOTORS //  $0; stop motors
+          sendMotorCommandQueue(STOP);
           break;
-        case 2:
-          actualizarReferenciasCirculo(data_float_array[0], data_float_array[1]); // $2:2:30,50;
+        case 1: //  LINE  //  $1:1:1.5; // go straight with 1.5 of velocity
+          transfer_var_1=data_float_array[0];
+          sendMotorCommandQueue(LINE);          
+          break;
+        case 2: //  CIRCLE  //  $2:2:30:70; // make a cricle of 30cm with 50% of speed
+          transfer_var_1=data_float_array[0];
+          transfer_var_2=data_float_array[1];
+          sendMotorCommandQueue(CIRCLE);
           break; 
-        case 3:
-          enable_plot=data_float_array[0]; // $1:1:1;
-          break;  
+        case 3: // EN_PLOTING //  $3:1:1; //enable ploting
+          enable_plot=data_float_array[0];
+          break;
+        case 4: //  LOAD_LEFT_MOTOR //  $4:4:1.5:2:1.5:2; //left motor
+          sendMotorCommandQueue(STOP);
+          number_data_motion_wA=number_data_int;
+          memcpy(wA_float_array, data_float_array , number_data_int*sizeof(float));
+          break;
+        case 5: //  LOAD_RIGHT_MOTOR  //  $5:4:2:1.5:2:1.5; //right motor
+          sendMotorCommandQueue(STOP);
+          number_data_motion_wB=number_data_int;
+          memcpy(wB_float_array, data_float_array , number_data_int*sizeof(float));
+          break;
+        case 6: //  LOAD_TIME_MOTOR //  $6:4:1000:500:2000:500;
+          sendMotorCommandQueue(STOP);
+          number_data_motion_dt=number_data_int;
+          memcpy(dt_float_array, data_float_array , number_data_int*sizeof(float));
+          break;
+        case 7: //  START_TRACK //  $7;
+          number_data_motion=number_data_motion_wA;
+          sendMotorCommandQueue(TRACK);
+          break;
+        case 8: //  PRINT_TRACK_PARAM //  $8;
+          number_data_motion=number_data_motion_wA;
+          printReceivedMotionParameters();
+          break;
+        case 9: //  FORCED  // $9:2:1.5:2; First A:left, then B:right 
+          transfer_var_1=data_float_array[0];
+          transfer_var_2=data_float_array[1];
+          sendMotorCommandQueue(FORCED);
+          break;
+        case 10:
+          Serial2.println("$OK;");           
         default:
-          //Serial.println("Command not correct");
+          //Serial2.println("Command not correct");
           break;
       }
     }
-    //vTaskDelay(80 / portTICK_PERIOD_MS); //it can only get 16*n delays n=1,2,3,..
+    //vTaskDelay(16 / portTICK_PERIOD_MS); //it can only get 16*n delays n=1,2,3,..
   }
 }
-void ControlA(void* pvParameters) {
+
+void sendMotorCommandQueue(int command){
+  motion_command_state_tx=command;
+  xQueueSend(queue_commands_motor, &motion_command_state_tx, portMAX_DELAY);
+}
+
+void printReceievedCommand(){
+  Serial2.print("Command code: ");
+  Serial2.println(command_string);
+  Serial2.print("Number of data: ");
+  Serial2.println(number_data_string);
+  for (int i = 0; i < number_data_int; ++i) {
+    Serial2.print("D[");
+    Serial2.print(i);
+    Serial2.print("] : ");
+    Serial2.println(data_float_array[i]);
+  }  
+}
+
+void printReceivedMotionParameters(){
+    for(int i=0;i<number_data_motion;i++){
+      Serial2.print("     wA - ");
+      Serial2.print(i);
+      Serial2.print(" : ");
+      Serial2.print(wA_float_array[i]);
+
+      Serial2.print("     wB - ");
+      Serial2.print(i);
+      Serial2.print(" : ");
+      Serial2.print(wB_float_array[i]);
+      
+      Serial2.print("     dt - ");
+      Serial2.print(i);
+      Serial2.print(" : ");
+      Serial2.print(dt_float_array[i]);
+
+      Serial2.println("");
+    }
+}
+
+void GenerateRoute(void* pvParameters){
+  TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
+  while (1) {
+    if(xQueueReceive(queue_commands_motor,&motion_command_state_rx,0) == pdPASS ){
+      motion_command_state=motion_command_state_rx;
+      if(motion_command_state == TRACK){
+          first_execute_motion=false;
+      }
+    }
+    switch(motion_command_state){
+        case EXECUTED:
+          break;
+        case STOP:
+          MB_w_ref=0;
+          MA_w_ref=0;
+          first_execute_motion=false;
+          motion_command_state=EXECUTED;
+          break;
+        case LINE:               // $1:1:1.5; // go straight with 1.5 of velocity
+          draw_line_constant_velocity(transfer_var_1);
+          motion_command_state=EXECUTED;
+          break;
+        case CIRCLE:
+          actualizarReferenciasCirculo(transfer_var_1, transfer_var_2); // $2:2:30,50; // make a cricle of 30cm with 50% of speed
+          motion_command_state=EXECUTED;
+          break; 
+        case TRACK:
+          if(number_data_motion>0){
+            if(first_execute_motion==false){
+              previousTimeMs=millis();
+              MA_w_ref= wA_float_array[0];
+              MB_w_ref= wB_float_array[0];
+              counter_motion_data=0;
+              first_execute_motion=true;
+            }
+            nowTimeMs=millis();
+  
+            if((nowTimeMs-previousTimeMs)>(dt_float_array[counter_motion_data])){
+              counter_motion_data++;
+              if(counter_motion_data >= number_data_motion){
+                motion_command_state=STOP;
+              }else{  
+                MA_w_ref= wA_float_array[counter_motion_data];
+                MB_w_ref= wB_float_array[counter_motion_data];
+                previousTimeMs=nowTimeMs;
+              }  
+            }
+          }
+          break;
+        case FORCED:               // $1:1:1.5; // go straight with 1.5 of velocity
+          MA_w_ref=transfer_var_1;
+          MB_w_ref=transfer_var_2;
+          motion_command_state=EXECUTED;
+          break;  
+        default:
+          //Serial2.println("Command not correct");
+          break;
+      }   
+      vTaskDelay(16 / portTICK_PERIOD_MS);
+    }
+}
+
+void ControlMotors(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
     sensarMA_1();
@@ -304,6 +455,7 @@ void ControlA(void* pvParameters) {
     vTaskDelay(16 / portTICK_PERIOD_MS);
   }
 }
+
 void Plot(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {   
@@ -312,9 +464,6 @@ void Plot(void* pvParameters) {
   }
 }
 
-void motorVoltaje(int pin, float voltaje){   
-    analogWrite(pin,byte((voltaje / (2 * Vm) + 0.5) * 255));
-}
 void actualizarReferenciasCirculo(float rt, float circle_speed){
   float Theta_vel=0.0;
   float Theta_vel_min=0.0;
@@ -367,47 +516,19 @@ void draw_line_constant_velocity(float variable){
     timeEncNowMA=micros();
     timeEncNowMB=micros();  
 }
-void start_sampling_to_5_5v(){
-    varContador=0.0;
-    varContador2=0.0;
-    timeEncNowMA=micros();
-    timeEncNowMB=micros();
-    varTimeBef_10ms=micros();
-    motorVoltaje(pinPWMA,5.5);
-    motorVoltaje(pinPWMB,5.5);
-}
 
 void plotRealTime(){
-    //MA_u=-MA_ace_bef*MA_K_11-MA_vel_bef*MA_K_12-MA_intError*MA_K_13;
-    //Serial.print("r: ");
-    //Serial.print(variable/10);
-    //Serial.print("\t");
-    //Serial.print("MA_u: ");
-    //Serial.print(MA_u);
-    //Serial.print("\t");
-    //Serial.print("MA_vel_sen: ");
-        
-    Serial.print(MA_varVel);
-    Serial.print("\t");
-    Serial.print(MA_w_ref);
-    Serial.print("\t");
-    Serial.print(MB_varVel);
-    Serial.print("\t");
-    Serial.print(MB_w_ref);
-    Serial.print("\t");
-    
-    
-    //Serial.print(MA_u);
-    //Serial.print("\t"); 
-    //Serial.print(MB_vel_bef);
-    //Serial.print("\t");
-    //Serial.print("MA_vel_bef: ");
-    //Serial.print(MA_vel_bef);
-    //Serial.print("\t");
-    //Serial.print("MA_ace_bef: ");
-    //Serial.print(MA_ace_bef);
-    Serial.println("");
+    Serial2.print(MA_varVel);
+    Serial2.print("\t");
+    Serial2.print(MA_w_ref);
+    Serial2.print("\t");
+    Serial2.print(MB_varVel);
+    Serial2.print("\t");
+    Serial2.print(MB_w_ref);
+    Serial2.print("\t");
+    Serial2.println("");
 }
+
 void  encoderAFunction(){
   timeEncNowMA=micros();
   if((62500.0/(timeEncNowMA-timeEncBefMA)<MA_limiteSuperiorVelocidadRadial)){
@@ -465,9 +586,19 @@ void controlarVelocidadMotorA(float vel_ref){
     satA=0.0;  
   }
   
-  motorVoltaje(pinPWMA,MA_u_saturated);
+  motorVoltaje(pinEnableA,pinPWMA,MA_u_saturated);
   MA_ace_bef=(MA_d_B11*MA_u)+MA_L_11*(MA_varVel-MA_vel_bef)+(MA_d_A11*MA_ace_bef+MA_d_A12*MA_vel_bef);
   MA_vel_bef=(MA_d_B21*MA_u)+MA_L_21*(MA_varVel-MA_vel_bef)+(MA_d_A21*MA_ace_bef+MA_d_A22*MA_vel_bef);
+}
+
+void motorVoltaje(int pin_enable, int pin, float voltaje){
+    if(voltaje<0.05 && voltaje>-0.05){
+      digitalWrite(pin_enable, LOW);
+      analogWrite(pin,0);
+    }else{
+      digitalWrite(pin_enable, HIGH); 
+      analogWrite(pin,byte((voltaje / (2 * Vm) + 0.5) * 255));
+    } 
 }
 
 void  encoderBFunction(){
@@ -528,22 +659,31 @@ void controlarVelocidadMotorB(float vel_ref){
     satB=0.0;  
   }
   
-  motorVoltaje(pinPWMB,MB_u_saturated);
+  motorVoltaje(pinEnableB,pinPWMB,MB_u_saturated);
   
   MB_ace_bef=(MB_d_B11*MB_u)+MB_L_11*(MB_varVel-MB_vel_bef)+(MB_d_A11*MB_ace_bef+MB_d_A12*MB_vel_bef);
   MB_vel_bef=(MB_d_B21*MB_u)+MB_L_21*(MB_varVel-MB_vel_bef)+(MB_d_A21*MB_ace_bef+MB_d_A22*MB_vel_bef); 
 }
 
+void start_sampling_to_5_5v(){
+    varContador=0.0;
+    varContador2=0.0;
+    timeEncNowMA=micros();
+    timeEncNowMB=micros();
+    varTimeBef_10ms=micros();
+    motorVoltaje(pinEnableA,pinPWMA,5.5);
+    motorVoltaje(pinEnableB,pinPWMB,5.5);
+}
+
 void plotArray(){
-  Serial.print("MotorA");
-  Serial.print("\t");
-  Serial.println("MotorB");
+  Serial2.print("MotorA");
+  Serial2.print("\t");
+  Serial2.println("MotorB");
   for(int i=0.0;i<sizeVector;i++){
     //if(varArray[i]>10000 && varArray2[i]>10000){
-    Serial.print(varArray[i]);
-    
-    Serial.print("\t");
-    Serial.println(varArray2[i]);
+    Serial2.print(varArray[i]);   
+    Serial2.print("\t");
+    Serial2.println(varArray2[i]);
     //}
   }
 }
