@@ -3,17 +3,13 @@ close all;
 clear all;
 
 a=0.0325; %meter
-d=0.0725;
-max_rev_s=1; %rev/s
+d=0.725;
+max_rev_s=1.8; %rev/s
 omega_max_mov=max_rev_s*2*pi; %rad/s
 scale_path=1;
 
-%mousePointCoords(:,1)=[0.0212,0.0506,0.4669,0.4687,0.4779,0.4834,0.4613];
-%mousePointCoords(:,2)=[0.8540,0.9544,0.8820,0.8797,0.8750,0.4194,0.3026];
-
-mousePointCoords(:,1)=[0.0212,0.0506,0.4669,0.4687,0.4779,0.4834,0.4613];
-mousePointCoords(:,2)=[0.8540,0.9544,0.8820,0.8797,0.8750,0.4194,0.3026];
-
+mousePointCoords(:,1)=[0.2,0.2,0.9,0.9,0.1];
+mousePointCoords(:,2)=[0.2,0.9,0.9,0.2,0.1];
 mousePointCoords = mousePointCoords*scale_path;
 [w1_vector,w2_vector,dt_vector,x0,y0,psi0,estimated_position,phi_pos] = function_get_references_from_route(mousePointCoords, omega_max_mov,a,d);
 w_vector=[w1_vector;w2_vector];
@@ -28,6 +24,7 @@ w2_vector_rev_s=w2_vector/(2*pi);
 % legend("estimated phi","generated_from_ecuations phi")
 
 
+figure
 total_time = sum( dt_vector , 'all' )*1.1;
 function_kinematic_model_animation(0.005,total_time,a,d,x0,y0,psi0,estimated_position,w1_vector,w2_vector,dt_vector,false)
 

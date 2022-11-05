@@ -60,8 +60,6 @@ float variable2=0.0;
 float varTimeNow_100ms=0.0;
 float varTimeBef_100ms=0.0;
 
-float var2=0.0;
-
 int size_vector_sampling_A=200;
 float vector_sampling_A[200];
 
@@ -135,7 +133,7 @@ float MB_temporal_var_Diference=0.0;
 uint8_t rxBuffer;
 uint8_t cnt_rx;
 uint8_t state_rx=0;
-#define RX_SIZE 100
+#define RX_SIZE 300
 typedef struct {
   uint8_t msg[RX_SIZE];
   int len;
@@ -175,6 +173,8 @@ enum CarRouteOption{
 bool enablePIDA=true;
 bool enablePIDB=true;
 
+bool enableEchoCommand=false;
+
 void setup() {
   //ENABLE DRIVER
   pinMode(pinEnableA, OUTPUT);
@@ -194,7 +194,7 @@ void setup() {
   //DRIVER MOTOR A AND B
   pinMode(pinPWMA, OUTPUT);
   analogWrite(pinPWMA,128); //Velocidad en 0
-  pinMode(pinPWMB, OUTPUT);
+  pinMode(pinPWMB, OUTPUT); 
   analogWrite(pinPWMB,128);
 
   //vNopDelayMS(1000); // prevents usb driver crash on startup, do not omit this
@@ -213,7 +213,7 @@ void setup() {
   MB_w_ref=0.0;
   //delay(100);
 
-  queue_commands_serial = xQueueCreate( 10, sizeof(queue_commandRx));
+  queue_commands_serial = xQueueCreate( 3, sizeof(queue_commandRx));
   queue_commands_motor = xQueueCreate( 10, sizeof(int));
   // Se definen las tareas a realizar
   //xTaskCreate(Identificacion, "Task1", 200, NULL, 1, NULL);
@@ -289,7 +289,7 @@ void CommandHandler(void* pvParameters) {
           cnt++;
       }
       
-      //printReceievedCommand();
+      if(enableEchoCommand) printReceievedCommand();
       
       switch(command_int){
         case 0: //  STOP MOTORS //  $0; stop motors
@@ -335,10 +335,10 @@ void CommandHandler(void* pvParameters) {
           transfer_var_2=data_float_array[1];
           sendMotorCommandQueue(FORCED);
           break;
-        case 10:          // $10; Ping
+        case 10:  // $10; Ping
           Serial2.println("$OK;");
           break; 
-        case 11:        // $11:1:1; enable - $11:1:0; turn off
+        case 11:  // $11:1:1; enable PID - $11:1:0; turn off PID
           if(data_float_array[0]!=0){
             enablePIDA=true;
             enablePIDB=true;
@@ -347,19 +347,32 @@ void CommandHandler(void* pvParameters) {
             enablePIDB=false;   
           }
           break;
-        case 12:
-          motorVoltaje(pinEnableA,pinPWMA,data_float_array[0]);   // $12:1:5; set motors speed to 5v
-          motorVoltaje(pinEnableB,pinPWMB,data_float_array[0]);
+        case 12:  // $12:2:5:5; set motors A and B votalge to 5v
+          enablePIDA=false;
+          enablePIDB=false;
+          motorVoltaje(pinEnableA,pinPWMA,data_float_array[0]);   
+          motorVoltaje(pinEnableB,pinPWMB,data_float_array[1]);
           break;
-        case 13:    // $13:1:5; start sampling record of motors to 5V
+        case 13:  // $13:2:5:5; start sampling record of motors A and B to step 5V
           enablePIDA=false;
           enablePIDB=false; 
           start_sampling_A(data_float_array[0]);  
-          start_sampling_B(data_float_array[0]);
+          start_sampling_B(data_float_array[1]);
           break;
-        case 14:  // $14; print recorded values
+        case 14:  // $14; start record of motors A and B
+          counter_sampling_A=0.0;
+          counter_sampling_B=0.0;
+          break;
+        case 15:  // $15; print recorded values
           plot_recorded_array();
-          break;       
+          break;
+        case 16: // $16:1:1; enable command received
+          if(data_float_array[0]!=0){
+            enableEchoCommand=true;
+          }else{
+            enableEchoCommand=false;
+          }
+          break;
         default:
           //Serial2.println("Command not correct");
           break;

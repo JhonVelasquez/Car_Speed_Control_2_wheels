@@ -22,7 +22,7 @@ function [w1_vector,w2_vector,dt_vector,x0,y0,psi0,estimated_position,phi_pos] =
             phi_prev=deltha_theta;
         end
         
-        if(abs(deltha_theta-phi_prev)>deg2rad(44))
+        if(abs(deltha_theta-phi_prev)>deg2rad(45))
             new_desired_theta=sign(phi_prev-deltha_theta)*deg2rad(0)+deltha_theta;
             [w1,w2,dt] = function_estimate_rotation(phi_prev,new_desired_theta,omega_max_mov,a,d);
         elseif(phi_prev==deltha_theta)

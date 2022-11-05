@@ -61,7 +61,8 @@ function function_kinematic_model_animation(dt,ts,a,d,x0,y0,psi0,estimated_posit
             v_pos = R_psi*box_v;
             fill(v_pos(1, :)+eta(1,i),v_pos(2,:)+eta(2,i),'g')
             hold on, grid on
-            axis([-1 3 -1 3]), axis square
+            %axis([-1 3 -1 3])
+            axis square
             plot(eta(1,1:i),eta(2,1:i),'b-');
             plot(estimated_position(:,1), estimated_position(:,2),'*','MarkerSize',8);
             plot(achieved_etha(:,1), achieved_etha(:,2),'o','MarkerSize',8);
@@ -74,7 +75,8 @@ function function_kinematic_model_animation(dt,ts,a,d,x0,y0,psi0,estimated_posit
     else
             figure
             hold on, grid on
-            axis([-1 3 -1 3]), axis square
+            %axis([-1 3 -1 3])
+            axis square
             plot(eta(1,:),eta(2,:),'b-');
             plot(estimated_position(:,1), estimated_position(:,2),'*','MarkerSize',8);
             legend('MR sim','Path sim','expected points')

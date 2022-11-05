@@ -61,20 +61,9 @@ function [w1_o,w2_o,dt,phi1] = function_estimate_speeds(x0,y0,phi0,x1,y1,deltha_
      title("err_perc vs w2")
      hold on
      plot(w_samp(min_index_err_perc),abs(min_err_perc),'+')
-     hold off
-     hold on
+     %hold off
+     %hold on
      plot(w_samp(pos_variable_rounded),abs(err_perc(pos_variable_rounded)),'*')
-     hold off
-
-
-     figure
-     plot(w_samp,dt_u_found)
-     title("dt_u_found vs w2")
-     hold on
-     plot(w_samp(min_index_err_perc),abs(min_err_perc),'+')
-     hold off
-     hold on
-     plot(w_samp(pos_variable_rounded),(dt_u_found(pos_variable_rounded)),'*')
      hold off
 
     if(y_rotated>0)
