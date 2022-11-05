@@ -10,8 +10,8 @@ disp('Click the mouse wherever in the figure; press ENTER when finished.');
 mousePointCoords = ginput*0.5;
 close
 [w1_vector,w2_vector,dt_vector,x0,y0,psi0,estimated_position,phi_pos] = function_get_references_from_route(mousePointCoords, omega_max_mov,a,d);
-w1_vector_rev_s=w1_vector/(2*pi)
-w2_vector_rev_s=w2_vector/(2*pi)
+w1_vector_rev_s=w1_vector/(2*pi);
+w2_vector_rev_s=w2_vector/(2*pi);
 % w_vector=[w1_vector;w2_vector];
 % 
 % 
@@ -23,7 +23,7 @@ w2_vector_rev_s=w2_vector/(2*pi)
 % legend("estimated","generated_from_ecuations")
 
 total_time = sum( dt_vector , 'all' )*1.1;
-function_kinematic_model_animation(0.05,total_time,a,d,x0,y0,psi0,estimated_position,w1_vector,w2_vector,dt_vector,false)
+function_kinematic_model_animation(0.001,total_time,a,d,x0,y0,psi0,estimated_position,w1_vector,w2_vector,dt_vector,false)
 % (dt,ts,a,d,x0,y0,psi0,w1_vector,w2_vector,dt_vector)
  
 %%

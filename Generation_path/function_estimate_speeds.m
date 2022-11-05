@@ -31,52 +31,51 @@ function [w1_o,w2_o,dt,phi1] = function_estimate_speeds(x0,y0,phi0,x1,y1,deltha_
             min_err_perc=100000;
             min_index_err_perc=1;
         end   
-        if((err_perc(i)<min_err_perc)&&(dt_u_found(i)~=0))
-            if(err_perc(i)<0.001 && min_index_err_perc==1)
-                min_err_perc=err_perc(i);
-                min_index_err_perc=i;
-            end
+        if((err_perc(i)<min_err_perc))
+            min_err_perc=err_perc(i);
+            min_index_err_perc=i;
         end
     end
     
-    num_iter=1000;
-    alpha=70;
-    pos_variable_real=1;
-    pos_variable_rounded=1;
-    derivada=0;
-    step_derivative=15;
-    for i = 1:num_iter
-        derivada=(err_perc(pos_variable_rounded+step_derivative)-err_perc(pos_variable_rounded))/(w_samp(pos_variable_rounded+step_derivative)-w_samp(pos_variable_rounded));
-        derivada
-        pos_variable_real=(pos_variable_real-alpha*derivada);
-        pos_variable_real
-        pos_variable_rounded=round(pos_variable_real);
-        pos_variable_rounded
-    end
+%     num_iter=2000;
+%     alpha=70;
+%     pos_variable_real=1;
+%     pos_variable_rounded=1;
+%     derivada=0;
+%     step_derivative=5;
+%     for i = 1:num_iter
+%         if((pos_variable_rounded+step_derivative)<=length(err_perc))
+%             derivada=(err_perc(pos_variable_rounded+step_derivative)-err_perc(pos_variable_rounded))/(w_samp(pos_variable_rounded+step_derivative)-w_samp(pos_variable_rounded));
+%             pos_variable_real=(pos_variable_real-alpha*derivada);
+%             pos_variable_rounded=round(pos_variable_real);
+%         else
+%             pos_variable_rounded
+%         end
+%     end
+%     
     
-    min_index_err_perc=pos_variable_rounded;
-    
-     figure
-     plot(w_samp,err_perc)
-     title("err_perc vs w2")
-     hold on
-     plot(w_samp(min_index_err_perc),abs(min_err_perc),'+')
-     hold off
-     hold on
-     plot(w_samp(pos_variable_rounded),abs(err_perc(pos_variable_rounded)),'*')
-     hold off
+%      figure
+%      plot(w_samp,err_perc)
+%      title("err_perc vs w2")
+%      hold on
+%      plot(w_samp(min_index_err_perc),err_perc(min_index_err_perc),'+')
+%      hold off
+%      hold on
+%      plot(w_samp(pos_variable_rounded),err_perc(pos_variable_rounded),'*')
+%      hold off
+% 
+% 
+%      figure
+%      plot(w_samp,dt_u_found)
+%      title("dt_u_found vs w2")
+%      hold on
+%      plot(w_samp(min_index_err_perc),(dt_u_found(min_index_err_perc)),'+')
+%      hold off
+%      hold on
+%      plot(w_samp(pos_variable_rounded),(dt_u_found(pos_variable_rounded)),'*')
+%      hold off
 
-
-     figure
-     plot(w_samp,dt_u_found)
-     title("dt_u_found vs w2")
-     hold on
-     plot(w_samp(min_index_err_perc),abs(min_err_perc),'+')
-     hold off
-     hold on
-     plot(w_samp(pos_variable_rounded),(dt_u_found(pos_variable_rounded)),'*')
-     hold off
-
+    min_index_err_perc=min_index_err_perc; %selecting local minimum algorithm or minimum iteration
     if(y_rotated>0)
         w1_o=omega_max_mov;
         w2_o=w_samp(min_index_err_perc);
