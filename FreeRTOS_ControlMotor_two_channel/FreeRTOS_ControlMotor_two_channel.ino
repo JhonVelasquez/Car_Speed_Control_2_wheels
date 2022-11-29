@@ -6,8 +6,13 @@
 // Include queue support
 #include <queue.h>
 
+
+extern HardwareSerial Serial2;
+
 int pinEnableA=11; //Izquierdo
 int pinPWMA=10; //Izquierdo
+
+int notUsedVariable=0;
 
 int pinEnableB=7; //Derecho
 int pinPWMB=6; //Derecho
@@ -263,7 +268,7 @@ void CommandHandler(void* pvParameters) {
     if(xQueueReceive(queue_commands_serial,&queueCommandRx,0) == pdPASS ){
 
       //Split string and get comand code, number of data, and data;
-      char *temp = queueCommandRx.msg+1;
+      char *temp = (char  *)queueCommandRx.msg+1;
       temp[strlen(temp) - 1] = '\0';
       
       char *p_rxData = strtok(temp, ":");
@@ -336,7 +341,7 @@ void CommandHandler(void* pvParameters) {
           sendMotorCommandQueue(FORCED);
           break;
         case 10:  // $10; Ping
-          Serial2.println("$OK;");
+          Serial2.println("$OK :);");
           break; 
         case 11:  // $11:1:1; enable PID - $11:1:0; turn off PID
           if(data_float_array[0]!=0){

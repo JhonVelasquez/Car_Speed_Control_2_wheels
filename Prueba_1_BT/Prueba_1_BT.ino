@@ -1,4 +1,5 @@
 #include <SoftwareSerial.h>
+extern HardwareSerial Serial2;
 
 void setup() {
 
