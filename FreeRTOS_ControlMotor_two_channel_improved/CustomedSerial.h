@@ -4,18 +4,15 @@
 #include <queue.h>
 #include "DefineCustomed.h"
 
-extern HardwareSerial Serial2;
+//extern HardwareSerial Serial2;
 
-class CustomedSerial
-{
+class CustomedSerial{
     private:
-        char rx_buffer_send;
-        char rx_buffer_recv ;
         char tx_buffer_recv;
-        QueueHandle_t queue_rx_serial;
+        QueueHandle_t queue_rx_serial; // BUG: Commenting this lines makes de freertos to crash aparently
         QueueHandle_t queue_tx_serial;
     public:
-        CustomedSerial(/* args */);
+        CustomedSerial();
         void mainTask();
         void printNumber(unsigned long n, uint8_t base);
         void printNumber(unsigned long n);
@@ -47,25 +44,30 @@ class CustomedSerial
         void test(char temp);
 };
 
-CustomedSerial::CustomedSerial(/* args */){
-  this->queue_rx_serial = xQueueCreate( LENGTH_CUSTOMED_SERIAL_QUEUETX_CHAR, sizeof(char *));
+CustomedSerial::CustomedSerial(){
   this->queue_tx_serial = xQueueCreate( LENGTH_CUSTOMED_SERIAL_QUEUETX_CHAR, sizeof(char *));
 }
 
 void CustomedSerial::mainTask(){
-    // receive from exterior and send to user
-    /*
-    if(Serial2.available()){
-        rx_buffer_send = Serial2.read();
-        xQueueSend(queue_rx_serial, &rx_buffer_send, portMAX_DELAY);
-    }
-    */
-
     //send to the exterior
     if(xQueueReceive(queue_tx_serial, &tx_buffer_recv, 0) == pdPASS ){
         Serial2.print(tx_buffer_recv);
     }
 }
+
+bool CustomedSerial::available(){
+   if(Serial2.available()){
+    return true;
+   }else{
+    return false;
+   }
+}
+
+char CustomedSerial::read(){
+    char r = Serial2.read();
+    return r;
+}
+
 
 //receiving chars from user
 void CustomedSerial::write(char rx){
@@ -234,26 +236,6 @@ void CustomedSerial::println(double number){
     CustomedSerial::println();
 }
 //outputting chars to user
-
-bool CustomedSerial::available(){
-    /*
-    if(xQueueReceive(queue_rx_serial, &rx_buffer_recv, 0) == pdPASS ){
-        return true;
-    }
-    return false;
-    */
-   if(Serial2.available()){
-    return true;
-   }else{
-    return false;
-   }
-}
-
-char CustomedSerial::read(){
-    //return rx_buffer_recv;
-    char r = Serial2.read();
-    return r;
-}
 
 void CustomedSerial::test(char temp){
     if(temp == 'a'){

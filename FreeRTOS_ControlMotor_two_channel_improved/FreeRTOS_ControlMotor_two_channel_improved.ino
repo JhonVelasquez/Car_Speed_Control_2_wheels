@@ -4,6 +4,7 @@
 #include <queue.h>
 #include "Motor.h"
 #include "CommandHandler.h"
+#include "CustomedSerial.h"
 
 extern HardwareSerial Serial2;
 
@@ -112,7 +113,7 @@ void setup() {
   while(!Serial);
 
   // Se definen las tareas a realizar
-  xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
+  xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 512, NULL, 0, NULL);
   //xTaskCreate(Test_thread, "Task-1", 256, NULL, 0, NULL);
   xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
   xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
