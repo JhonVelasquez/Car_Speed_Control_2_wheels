@@ -47,16 +47,18 @@ class CustomedSerial
 };
 
 CustomedSerial::CustomedSerial(/* args */){
-  this->queue_rx_serial = xQueueCreate( 100, sizeof(char *));
-  this->queue_tx_serial = xQueueCreate( 100, sizeof(char *));
+  this->queue_rx_serial = xQueueCreate( 20, sizeof(char *));
+  this->queue_tx_serial = xQueueCreate( 20, sizeof(char *));
 }
 
 void CustomedSerial::mainTask(){
     // receive from exterior and send to user
+    /*
     if(Serial2.available()){
         rx_buffer_send = Serial2.read();
         xQueueSend(queue_rx_serial, &rx_buffer_send, portMAX_DELAY);
     }
+    */
 
     //send to the exterior
     if(xQueueReceive(queue_tx_serial, &tx_buffer_recv, 0) == pdPASS ){
@@ -233,14 +235,23 @@ void CustomedSerial::println(double number){
 //outputting chars to user
 
 bool CustomedSerial::available(){
+    /*
     if(xQueueReceive(queue_rx_serial, &rx_buffer_recv, 0) == pdPASS ){
         return true;
     }
     return false;
+    */
+   if(Serial2.available()){
+    return true;
+   }else{
+    return false;
+   }
 }
 
 char CustomedSerial::read(){
-    return rx_buffer_recv;
+    //return rx_buffer_recv;
+    char r = Serial2.read();
+    return r;
 }
 
 void CustomedSerial::test(char temp){

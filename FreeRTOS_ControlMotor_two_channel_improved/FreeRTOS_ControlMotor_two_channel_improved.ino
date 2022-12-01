@@ -107,20 +107,20 @@ void setup() {
   //vNopDelayMS(1000); // prevents usb driver crash on startup, do not omit this
  
   Serial2.begin(115200);
-  while(!Serial2);
+  //while(!Serial2);
   Serial.begin(115200);
-  while(!Serial);
+  //while(!Serial);
 
-  delay(10);
   Serial2.println("xtarting...");
   Serial.println("xtarting...");
+
   // Se definen las tareas a realizar
   xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
-  //xTaskCreate(CharCommunication_thread, "Task-1", 256, NULL, 0, NULL);
-  xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 1, NULL);
-  //xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
-  //xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
-  //xTaskCreate(Plot_thread, "Task3", 256, NULL, 1, NULL);
+  //xTaskCreate(Test_thread, "Task-1", 256, NULL, 0, NULL);
+  xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
+  xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
+  xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
+  xTaskCreate(Plot_thread, "Task3", 256, NULL, 1, NULL);
   //vTaskStartScheduler();
 }
 
@@ -144,25 +144,13 @@ void CharCommunication_mainTask_thread(void* pvParameters) {
   }
 }
 
-//Rutina manejo de mensagjes
-void CharCommunication_thread(void* pvParameters) {
-  while (1) {
-    if(customedSerial.available()){
-      Serial.print(customedSerial.read());
-    }
-    if(Serial.available()){
-      char temp = Serial.read();
-      customedSerial.test(temp);
-    }
-  }
-}
 
 //Rutina de control de velocidad
 void CommandHandler_thread(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
     commandHandler.handleCommand();
-    vTaskDelay(16 / portTICK_PERIOD_MS);
+    vTaskDelay(49 / portTICK_PERIOD_MS);
   }
 }
 
@@ -208,5 +196,29 @@ void Plot_thread(void* pvParameters) {
       customedSerial.println("");
     }
     vTaskDelay(112 / portTICK_PERIOD_MS);
+  }
+}
+
+
+void Test_thread(void* pvParameters) {
+  while (1) {
+    /*
+    if(Serial2.available()){
+      char x = Serial2.read();
+      Serial.write(x);
+    }
+    if(Serial.available()){
+      char y = Serial.read();
+      Serial2.write(y);
+    }
+    */
+    if(customedSerial.available()){
+      char x = customedSerial.read();
+      Serial.print(x);
+    }
+    if(Serial.available()){
+      char y = Serial.read();
+      customedSerial.print(y);
+    }
   }
 }

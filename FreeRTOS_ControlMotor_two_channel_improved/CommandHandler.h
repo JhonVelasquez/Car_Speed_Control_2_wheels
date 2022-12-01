@@ -67,7 +67,7 @@ CommandHandler::CommandHandler(Encoder* e_A, Encoder* e_B, Motor* ma, Motor* mb,
   this->command = Command();
   this->queue_commands_serial = xQueueCreate( 3, sizeof(queue_commandRx));
   this->trackRoute_pointer = tr;
-  this->enable_echo_command = true;
+  this->enable_echo_command = false;
   this->enable_plot = false;
   this->enable_PID_A = true;
   this->enable_PID_B = true;
@@ -81,11 +81,9 @@ void CommandHandler::handleCommand(){
   //receiveCommandString();
   //customedSerial.println(".");     
   if(xQueueReceive(queue_commands_serial, &queueCommandRx, 0) == pdPASS ){
-    customedSerial.println("1_____");
     convertCommandString2Command(queueCommandRx.msg, &command);
     if(enable_echo_command) printReceievedCommand(&command);
-    //InterpretateCommand(&command);
-    customedSerial.println("2_____");
+    InterpretateCommand(&command);
   }
 }
 
@@ -106,7 +104,7 @@ void CommandHandler::receiveCommandString(){
         if(state_rx==1){
           queueCommandRx.msg[cnt_rx] = rxBuffer;
           queueCommandRx.len = cnt_rx+1;
-          xQueueSendFromISR(queue_commands_serial, &queueCommandRx, 0);
+          xQueueSend(queue_commands_serial, &queueCommandRx, 1);
         }
         state_rx=0;
       }
