@@ -107,12 +107,9 @@ void setup() {
   //vNopDelayMS(1000); // prevents usb driver crash on startup, do not omit this
  
   Serial2.begin(115200);
-  //while(!Serial2);
+  while(!Serial2);
   Serial.begin(115200);
-  //while(!Serial);
-
-  Serial2.println("xtarting...");
-  Serial.println("xtarting...");
+  while(!Serial);
 
   // Se definen las tareas a realizar
   xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
