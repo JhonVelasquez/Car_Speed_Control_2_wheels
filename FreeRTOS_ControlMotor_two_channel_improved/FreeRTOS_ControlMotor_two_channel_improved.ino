@@ -122,7 +122,7 @@ void setup() {
   Serial2.println("starting...");
   Serial.println("starting...");
   // Se definen las tareas a realizar
-  //xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
+  xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
   //xTaskCreate(CharCommunication_thread, "Task-1", 256, NULL, 0, NULL);
   xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
   xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
