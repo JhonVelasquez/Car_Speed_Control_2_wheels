@@ -1,3 +1,9 @@
+#ifndef ENCODER_
+#define ENCODER_
+
+
+#include "CustomedSerial.h"
+extern CustomedSerial customedSerial;
 
 class Encoder{
     private:
@@ -22,8 +28,7 @@ class Encoder{
 
         void startSampling();
         void sample();
-
-        void plotSampled(HardwareSerial s);
+        void plotSampled();
 };
 
 Encoder::Encoder(int pinEnc_1channel, int pinEnc_2channel, char * tag, int correction_factor_direction){
@@ -40,10 +45,10 @@ Encoder::Encoder(int pinEnc_1channel, int pinEnc_2channel, char * tag, int corre
 int Encoder::getPinOfInterrupt(){
   return this->pinEnc_1channel;
 }
-void Encoder::plotSampled(HardwareSerial s){
-  s.println(this->tag);
+void Encoder::plotSampled(){
+  customedSerial.println(this->tag);
   for(int i=0 ; i < this->size_of_sampling; i++){
-    s.println(vector_sampling[i]);
+    customedSerial.println(vector_sampling[i]);
   }
 }
 void Encoder::startSampling(){
@@ -72,3 +77,4 @@ float Encoder::sense_speed(){
   return this->last_sensed_speed;
 }
 
+#endif

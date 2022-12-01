@@ -1,3 +1,6 @@
+#ifndef COMMAND_HANDLER_
+#define COMMAND_HANDLER_
+
 #include <Arduino_FreeRTOS.h>
 #include <queue.h>
 #include "Command.h"
@@ -10,7 +13,8 @@ typedef struct {
   int len;
 } queue_commandRx;
 
-extern HardwareSerial Serial2;
+extern CustomedSerial customedSerial;
+//extern HardwareSerial Serial2;
 //extern Serial_ Serial;
 
 class CommandHandler{
@@ -83,9 +87,10 @@ void CommandHandler::handleCommand(){
 }
 
 void CommandHandler::receiveCommandString(){
-  if (Serial2.available()) {
-      rxBuffer = Serial2.read();
-      Serial.write(rxBuffer);
+  if (customedSerial.available()) {
+      rxBuffer = customedSerial.read();
+      //Serial.write(rxBuffer);
+      
       if (rxBuffer == '$' && state_rx==0) { // start of command
         cnt_rx = 0;
         state_rx=1;
@@ -141,15 +146,15 @@ void CommandHandler::convertCommandString2Command(uint8_t* message_pointer, Comm
 }
 
 void CommandHandler::printReceievedCommand(Command* c){
-  Serial2.print("Command code: ");
-  Serial2.println(c->command_id);
-  Serial2.print("Number of data: ");
-  Serial2.println(c->number_data);
+  customedSerial.print("Command code: ");
+  customedSerial.println(c->command_id);
+  customedSerial.print("Number of data: ");
+  customedSerial.println(c->number_data);
   for (int i = 0; i < c->number_data; ++i) {
-    Serial2.print("D[");
-    Serial2.print(i);
-    Serial2.print("] : ");
-    Serial2.println(c->data_float_array[i]);
+    customedSerial.print("D[");
+    customedSerial.print(i);
+    customedSerial.print("] : ");
+    customedSerial.println(c->data_float_array[i]);
   }  
 }
 
@@ -206,7 +211,7 @@ void CommandHandler::InterpretateCommand(Command* c){
       n = n_wa;
     }else{
       n = 0;
-      Serial2.println("Error:n_wa_wb_dt_notEqual");
+      customedSerial.println("Error:n_wa_wb_dt_notEqual");
     }
     trackRoute_pointer->set_number_data_motion(n);
 
@@ -224,7 +229,7 @@ void CommandHandler::InterpretateCommand(Command* c){
 
   }else if ( id == 10){  // PING // $10; Ping
 
-    Serial2.println("$OK ->:);");
+    customedSerial.println("$OK ->:);");
 
   }else if ( id == 11){ // EN_PID //$11:1:1; enable PID - $11:1:0; turn off PID
 
@@ -259,8 +264,8 @@ void CommandHandler::InterpretateCommand(Command* c){
 
   }else if ( id == 15){  //  PRINT_RECORDED_VALUES // $15; print recorded values
 
-    encoder_MA->plotSampled(Serial2);
-    encoder_MB->plotSampled(Serial2);
+    encoder_MA->plotSampled();
+    encoder_MB->plotSampled();
 
   }else if ( id == 16){ //  EN_ECHO //$16:1:1; enable ECHO command received
 
@@ -271,7 +276,7 @@ void CommandHandler::InterpretateCommand(Command* c){
     }
 
   }else{
-    //Serial2.println("Command not correct");
+    //customedSerial.println("Command not correct");
   }
 }
 
@@ -314,3 +319,5 @@ void CommandHandler::disablePIDB(){
 bool CommandHandler::getEnablePIDB(){
   return this->enable_PID_B;
 }
+
+#endif

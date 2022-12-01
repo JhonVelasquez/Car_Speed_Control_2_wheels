@@ -1,3 +1,8 @@
+#ifndef CAR_
+#define CAR_
+
+#include "CustomedSerial.h"
+
 class Car{
     private: 
         float s;
@@ -34,3 +39,5 @@ float Car::get_M_vel_min(){
 float Car::get_M_vel_max(){
     return M_vel_max;
 };
+
+#endif

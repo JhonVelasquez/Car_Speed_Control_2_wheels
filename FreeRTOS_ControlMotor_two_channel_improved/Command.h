@@ -1,3 +1,6 @@
+#ifndef COMMAND_
+#define COMMAND_
+
 class Command{
   public:
     int command_id;
@@ -11,3 +14,5 @@ Command::Command(){
   number_data = 0;
   data_float_array = new float[100];
 }         
+
+#endif

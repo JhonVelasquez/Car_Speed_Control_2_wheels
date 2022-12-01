@@ -1,3 +1,5 @@
+#ifndef CUSTOMED_SERIAL_
+#define CUSTOMED_SERIAL_
 
 #include <queue.h>
 
@@ -260,3 +262,5 @@ void CustomedSerial::test(char temp){
     this->print(y);
     }
 }
+
+#endif

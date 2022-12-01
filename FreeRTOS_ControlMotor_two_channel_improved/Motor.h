@@ -1,7 +1,10 @@
+#ifndef MOTOR_
+#define MOTOR_
+
 #include "Encoder.h"
 
-//extern Serial2 Serial2;
-extern HardwareSerial Serial2;
+//extern HardwareSerial Serial2;
+extern CustomedSerial customedSerial;
 
 class Motor {
     private:
@@ -143,13 +146,15 @@ void Motor::controlSpeed(float speed_ref, float speed_sensed){
 }
 
 void Motor::plotMotorParameters(float speed_MA, float speed_MB, float ref_MA, float ref_MB){
-    Serial2.print(speed_MA);
-    Serial2.print("\t");
-    Serial2.print(ref_MA);
-    Serial2.print("\t");
-    Serial2.print(speed_MB);
-    Serial2.print("\t");
-    Serial2.print(ref_MB);
-    Serial2.print("\t");
-    Serial2.println("");
+    customedSerial.print(speed_MA);
+    customedSerial.print("\t");
+    customedSerial.print(ref_MA);
+    customedSerial.print("\t");
+    customedSerial.print(speed_MB);
+    customedSerial.print("\t");
+    customedSerial.print(ref_MB);
+    customedSerial.print("\t");
+    customedSerial.println("");
 }
+
+#endif

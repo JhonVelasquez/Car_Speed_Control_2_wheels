@@ -10,7 +10,7 @@
 #include "CommandHandler.h"
 //#include "Car.h"
 //#include "TrackRoute.h"
-#include "CustomedSerial.h"
+//#include "CustomedSerial.h"
 
 extern HardwareSerial Serial2;
 
@@ -112,10 +112,11 @@ void setup() {
   analogWrite(pinPWMB,128);
 
   //vNopDelayMS(1000); // prevents usb driver crash on startup, do not omit this
-  //while(!Serial2);  // Wait for Serial2 terminal to open port before starting program
  
   Serial2.begin(115200);
+  while(!Serial2);
   Serial.begin(115200);
+  while(!Serial);
 
   delay(10);
   Serial2.println("starting...");
@@ -201,16 +202,16 @@ void Plot_thread(void* pvParameters) {
       float r_A = trackRoute.get_wA();
       float s_B = encoder_MB.sense_speed();
       float r_B = trackRoute.get_wB();
-      //MA.plotMotorParameters(Serial2, s_A, s_B, r_A, r_B);
-      Serial2.print(s_A);
-      Serial2.print("\t");
-      Serial2.print(r_A);
-      Serial2.print("\t");
-      Serial2.print(s_B);
-      Serial2.print("\t");
-      Serial2.print(r_B);
-      Serial2.print("\t");
-      Serial2.println("");
+      //MA.plotMotorParameters(customedSerial, s_A, s_B, r_A, r_B);
+      customedSerial.print(s_A);
+      customedSerial.print("\t");
+      customedSerial.print(r_A);
+      customedSerial.print("\t");
+      customedSerial.print(s_B);
+      customedSerial.print("\t");
+      customedSerial.print(r_B);
+      customedSerial.print("\t");
+      customedSerial.println("");
     }
     vTaskDelay(112 / portTICK_PERIOD_MS);
   }

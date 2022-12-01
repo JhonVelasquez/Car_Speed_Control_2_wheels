@@ -1,9 +1,12 @@
+#ifndef TRACK_ROUTE_
+#define TRACK_ROUTE_
 
 #include "Car.h"
 #include <queue.h>
 #include <Arduino_FreeRTOS.h>
-
-extern HardwareSerial Serial2;
+#include "CustomedSerial.h"
+//extern HardwareSerial Serial2;
+extern CustomedSerial customedSerial;
 
 enum CarRouteOption{
   STOP = 0,
@@ -287,28 +290,30 @@ void TrackRoute::actualizarReferenciasCirculo(float rt, float circle_speed, Car*
 }
 
 void TrackRoute::printReceivedMotionParameters(){
-  Serial2.print("Number data: ");
-  Serial2.println(number_data_motion);
+  customedSerial.print("Number data: ");
+  customedSerial.println(number_data_motion);
   for(int i=0; i < number_data_motion; i++){
-    Serial2.print("     wA - ");
-    Serial2.print(i);
-    Serial2.print(" : ");
-    Serial2.print(wA_float_array[i]);
+    customedSerial.print("     wA - ");
+    customedSerial.print(i);
+    customedSerial.print(" : ");
+    customedSerial.print(wA_float_array[i]);
 
-    Serial2.print("     wB - ");
-    Serial2.print(i);
-    Serial2.print(" : ");
-    Serial2.print(wB_float_array[i]);
+    customedSerial.print("     wB - ");
+    customedSerial.print(i);
+    customedSerial.print(" : ");
+    customedSerial.print(wB_float_array[i]);
     
-    Serial2.print("     dt - ");
-    Serial2.print(i);
-    Serial2.print(" : ");
-    Serial2.print(dt_float_array[i]);
+    customedSerial.print("     dt - ");
+    customedSerial.print(i);
+    customedSerial.print(" : ");
+    customedSerial.print(dt_float_array[i]);
 
-    Serial2.println("");
+    customedSerial.println("");
   }
 }
 
 void TrackRoute::sendMotorCommandQueue(int command){
   xQueueSend(queue_commands_motor, &command, portMAX_DELAY);
 }
+
+#endif
