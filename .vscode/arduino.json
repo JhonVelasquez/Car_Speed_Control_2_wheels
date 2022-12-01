@@ -1,7 +1,7 @@
 {
     "board": "arduino:avr:mega",
     "programmer": "arduino:arduinoisp",
-    "sketch": "FreeRTOS_ControlMotor_two_channel\\FreeRTOS_ControlMotor_two_channel.ino",
+    "sketch": "FreeRTOS_ControlMotor_two_channel_improved\\FreeRTOS_ControlMotor_two_channel_improved.ino",
     "port": "COM4",
     "configuration": "cpu=atmega2560"
 }

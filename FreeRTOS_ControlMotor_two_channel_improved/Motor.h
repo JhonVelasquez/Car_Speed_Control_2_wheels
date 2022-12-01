@@ -1,5 +1,8 @@
 #include "Encoder.h"
 
+//extern Serial2 Serial2;
+extern HardwareSerial Serial2;
+
 class Motor {
     private:
         float d_A11 ;  
@@ -22,14 +25,14 @@ class Motor {
         float speed;
         float u;
         float u_saturated;
-        float e_u_equal;
+        float error;
         float integral_error;
         float acc_bef;
         float speed_bef;
+        int is_equal;
+        int sign_equal;
         int is_saturated;
-        
-        float vector_sampling[200];
-        float size_of_sampling;
+    
         float counter_sampling;
     public:
         Motor(  float d_A11 ,float d_A12 , float d_A21 , float d_A22 ,
@@ -40,7 +43,11 @@ class Motor {
         void controlSpeed(float speed_ref, float speed_sensed);
         void motorVoltaje(float voltaje);
         void motorVoltaje(int pinEnable, int  pinPWM, float  voltaje, float Vm);
-        void plotMotorParameters(HardwareSerial s, float speed_MA, float speed_MB, float ref_MA, float ref_MB);
+        void plotMotorParameters(float speed_MA, float speed_MB, float ref_MA, float ref_MB);
+        int getIsSaturated();
+        float getError();
+        float getU();
+
 };
 
 Motor::Motor( float d_A11 ,float d_A12 , float d_A21 , float d_A22 , float d_B11 , float d_B21 , float K_11 , float K_12 ,  float K_13 ,  float L_11 ,  float L_21 , float dt, float Vm, int pin_enable, int pin_pwm){
@@ -59,13 +66,6 @@ Motor::Motor( float d_A11 ,float d_A12 , float d_A21 , float d_A22 , float d_B11
     this -> Vm = Vm;
     this -> pin_enable = pin_enable;
     this -> pin_pwm = pin_pwm;
-
-    this -> size_of_sampling = sizeof(this->vector_sampling)/sizeof(this->vector_sampling[0]);
-    for (int i = 0; i < this -> size_of_sampling; ++i) // Using for loop we are initializing
-    {
-        vector_sampling[i] = 0;
-    }
-    this -> counter_sampling = this -> size_of_sampling; //saturate counter
 }
 
 void Motor::motorVoltaje(float voltaje){
@@ -82,45 +82,74 @@ void Motor::motorVoltaje(int pinEnable,int  pinPWM, float  voltaje, float Vm){
     } 
 }
 
+int signo(float val) {
+  if (val < 0) return -1;
+  if (val==0) return 0;
+  return 1;
+}
+
+int Motor::getIsSaturated(){
+    return is_saturated;
+}
+float Motor::getError(){
+    return error;
+};
+float Motor::getU(){
+    return u;
+};
+
 void Motor::controlSpeed(float speed_ref, float speed_sensed){
     speed = speed_sensed;
-    if(((speed-speed_ref)>0 && (u>0)) || ((speed-speed_ref)<0 && (u<0)))
-        e_u_equal=1;
-    else
-        e_u_equal=0;
+    error = (speed_ref-speed);
 
-    if(e_u_equal && is_saturated)
-        integral_error = ((speed-speed_ref-(u_saturated-u)*20)*dt)+integral_error;
-    else
-        integral_error = ((speed-speed_ref)*dt)+integral_error;
+    if(signo(error) == signo(u)) sign_equal = 1;
+    else sign_equal = 0;
 
-    u = -acc_bef*K_11 - speed_bef*K_12 - integral_error*K_13;
+    if((sign_equal == 1) && (is_equal == 0)){
+        is_saturated = 1;
+    }else{
+        is_saturated = 0;
+    }
+
+    if(is_saturated == 1){
+        integral_error = integral_error;
+    }else{
+        integral_error = (error*dt) + integral_error;
+    }
+
+    u = -acc_bef*K_11 - speed_bef*K_12 + integral_error*K_13;
 
     if((u > Vm)){
         u_saturated = Vm;
-        is_saturated = 1;
     }else if((u < -Vm)){
         u_saturated = -Vm;
-        is_saturated = 1;
     }else{
         u_saturated = u;
-        is_saturated = 0;  
     }
+
+    if(u_saturated == u) is_equal = 1;
+    else is_equal = 0;  
 
     motorVoltaje(pin_enable, pin_pwm, u_saturated, Vm);
 
-    acc_bef = (d_B11*u) + L_11*(speed - speed_bef) + (d_A11*acc_bef + d_A12*speed_bef);
-    speed_bef = (d_B21*u) + L_21*(speed - speed_bef) + (d_A21*acc_bef + d_A22*speed_bef);
+    if(is_saturated == 1){
+        acc_bef = 0;
+        speed_bef = speed;
+    }else{
+        acc_bef = (d_B11*u_saturated) + L_11*(speed - speed_bef) + (d_A11*acc_bef + d_A12*speed_bef);
+        speed_bef = (d_B21*u_saturated) + L_21*(speed - speed_bef) + (d_A21*acc_bef + d_A22*speed_bef);
+    }
+
 }
 
-void Motor::plotMotorParameters(HardwareSerial s, float speed_MA, float speed_MB, float ref_MA, float ref_MB){
-    s.print(speed_MA);
-    s.print("\t");
-    s.print(ref_MA);
-    s.print("\t");
-    s.print(speed_MB);
-    s.print("\t");
-    s.print(ref_MB);
-    s.print("\t");
-    s.println("");
+void Motor::plotMotorParameters(float speed_MA, float speed_MB, float ref_MA, float ref_MB){
+    Serial2.print(speed_MA);
+    Serial2.print("\t");
+    Serial2.print(ref_MA);
+    Serial2.print("\t");
+    Serial2.print(speed_MB);
+    Serial2.print("\t");
+    Serial2.print(ref_MB);
+    Serial2.print("\t");
+    Serial2.println("");
 }

@@ -3,6 +3,8 @@
 #include <queue.h>
 #include <Arduino_FreeRTOS.h>
 
+extern HardwareSerial Serial2;
+
 enum CarRouteOption{
   STOP = 0,
   LINE,
@@ -33,7 +35,7 @@ class TrackRoute{
         int get_number_data_motion_wB();
         int get_number_data_motion_dt();
         int get_number_data_motion();
-        void printReceivedMotionParameters(HardwareSerial s);
+        void printReceivedMotionParameters();
         void set_wA_array(float *copy_from, int number_data);
         void set_wB_array(float *copy_from, int number_data);
         void set_dt_array(float *copy_from, int number_data);
@@ -284,25 +286,27 @@ void TrackRoute::actualizarReferenciasCirculo(float rt, float circle_speed, Car*
   MB_w_ref=Theta_vel*(2*rt+s)/(M_d);
 }
 
-void TrackRoute::printReceivedMotionParameters(HardwareSerial s){
-    for(int i=0; i<number_data_motion; i++){
-      s.print("     wA - ");
-      s.print(i);
-      s.print(" : ");
-      s.print(wA_float_array[i]);
+void TrackRoute::printReceivedMotionParameters(){
+  Serial2.print("Number data: ");
+  Serial2.println(number_data_motion);
+  for(int i=0; i < number_data_motion; i++){
+    Serial2.print("     wA - ");
+    Serial2.print(i);
+    Serial2.print(" : ");
+    Serial2.print(wA_float_array[i]);
 
-      s.print("     wB - ");
-      s.print(i);
-      s.print(" : ");
-      s.print(wB_float_array[i]);
-      
-      s.print("     dt - ");
-      s.print(i);
-      s.print(" : ");
-      s.print(dt_float_array[i]);
+    Serial2.print("     wB - ");
+    Serial2.print(i);
+    Serial2.print(" : ");
+    Serial2.print(wB_float_array[i]);
+    
+    Serial2.print("     dt - ");
+    Serial2.print(i);
+    Serial2.print(" : ");
+    Serial2.print(dt_float_array[i]);
 
-      s.println("");
-    }
+    Serial2.println("");
+  }
 }
 
 void TrackRoute::sendMotorCommandQueue(int command){

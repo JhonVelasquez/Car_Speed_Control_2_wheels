@@ -7,10 +7,10 @@
 #include <queue.h>
 //#include "Encoder.h"
 #include "Motor.h"
-#include <WString.h>
 #include "CommandHandler.h"
 //#include "Car.h"
 //#include "TrackRoute.h"
+#include "CustomedSerial.h"
 
 extern HardwareSerial Serial2;
 
@@ -34,8 +34,8 @@ int pinEncB_2channel=8;
 Car car = Car(s, M_d, M_vel_min, M_vel_max);
 TrackRoute trackRoute = TrackRoute();
 
-Encoder encoder_MA = Encoder(pinEncA_1channel, pinEncA_2channel, "Motor_A");
-Encoder encoder_MB = Encoder(pinEncB_1channel, pinEncB_2channel, "Motor_B"); 
+Encoder encoder_MA = Encoder(pinEncA_1channel, pinEncA_2channel, "Motor_A", 1);
+Encoder encoder_MB = Encoder(pinEncB_1channel, pinEncB_2channel, "Motor_B", -1); 
 
 #define MA_limiteSuperiorVelocidadRadial 2.8
 #define MA_limiteInferiorVelocidadRadial 0.05
@@ -85,6 +85,7 @@ Motor MB = Motor( MB_d_A11 , MB_d_A12 , MB_d_A21 , MB_d_A22,
          );  
 
 
+CustomedSerial customedSerial = CustomedSerial();
 CommandHandler commandHandler = CommandHandler(&encoder_MA, &encoder_MB, &MA, &MB, &trackRoute);
 
 void setup() {
@@ -115,9 +116,13 @@ void setup() {
  
   Serial2.begin(115200);
   Serial.begin(115200);
-  
-  
+
+  delay(10);
+  Serial2.println("starting...");
+  Serial.println("starting...");
   // Se definen las tareas a realizar
+  //xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
+  //xTaskCreate(CharCommunication_thread, "Task-1", 256, NULL, 0, NULL);
   xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
   xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
   xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
@@ -136,12 +141,33 @@ void interrupt_MA(){
 void interrupt_MB(){
   encoder_MB.encoderFunction();
 }
+
+//Rutina manejo de mensagjes
+void CharCommunication_mainTask_thread(void* pvParameters) {
+  while (1) {
+    customedSerial.mainTask();
+  }
+}
+
+//Rutina manejo de mensagjes
+void CharCommunication_thread(void* pvParameters) {
+  while (1) {
+    
+    if(customedSerial.available()){
+      Serial.print(customedSerial.read());
+    }
+    if(Serial.available()){
+      char temp = Serial.read();
+      customedSerial.test(temp);
+    }
+  }
+}
+
 //Rutina de control de velocidad
 void CommandHandler_thread(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
     commandHandler.handleCommand();
-    //vTaskDelay(16 / portTICK_PERIOD_MS); //it can only get 16*n delays n=1,2,3,..
   }
 }
 
@@ -149,6 +175,7 @@ void TrackRoute_thread(void* pvParameters){
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
     trackRoute.mainExecution(&car);
+    vTaskDelay(16 / portTICK_PERIOD_MS);
   }
 }
 
@@ -160,17 +187,30 @@ void ControlMotors_thread(void* pvParameters){
     if(commandHandler.getEnablePIDA()) MA.controlSpeed( r_A, s_A);
     
     float s_B = encoder_MB.sense_speed();
-    float r_B = trackRoute.get_wA();
+    float r_B = trackRoute.get_wB();
     if(commandHandler.getEnablePIDB()) MB.controlSpeed( r_B, s_B);
-    vTaskDelay(16 / portTICK_PERIOD_MS);
+    vTaskDelay(16 / portTICK_PERIOD_MS); //it can only get 16*n delays n=1,2,3,..
   }
 }
 
 void Plot_thread(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {   
-    if(commandHandler.getEnableEchoCommand()){
-      MA.plotMotorParameters(Serial2, encoder_MA.sense_speed(), encoder_MB.sense_speed(), trackRoute.get_wA(), trackRoute.get_wB());
+    if(commandHandler.getEnablePlot()){
+      float s_A = encoder_MA.sense_speed();
+      float r_A = trackRoute.get_wA();
+      float s_B = encoder_MB.sense_speed();
+      float r_B = trackRoute.get_wB();
+      //MA.plotMotorParameters(Serial2, s_A, s_B, r_A, r_B);
+      Serial2.print(s_A);
+      Serial2.print("\t");
+      Serial2.print(r_A);
+      Serial2.print("\t");
+      Serial2.print(s_B);
+      Serial2.print("\t");
+      Serial2.print(r_B);
+      Serial2.print("\t");
+      Serial2.println("");
     }
     vTaskDelay(112 / portTICK_PERIOD_MS);
   }

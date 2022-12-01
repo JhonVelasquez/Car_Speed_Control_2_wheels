@@ -1,8 +1,7 @@
-#include <WString.h>
 
 class Encoder{
     private:
-        String tag;
+        char * tag;
         int direction_enc;
         int pinEnc_1channel;
         int pinEnc_2channel;
@@ -11,11 +10,12 @@ class Encoder{
         unsigned long timeEncBef;
         float last_sensed_speed;
 
-        float vector_sampling[200];
+        float vector_sampling[100];
         float size_of_sampling;
         int counter_sampling;
+        int correction_factor_direction;
     public:
-        Encoder(int pinEnc_1channel,int pinEnc_2channel, String tag);
+        Encoder(int pinEnc_1channel,int pinEnc_2channel, char * tag, int correction_factor_direction);
         int getPinOfInterrupt();
         void encoderFunction();
         float sense_speed();
@@ -26,7 +26,7 @@ class Encoder{
         void plotSampled(HardwareSerial s);
 };
 
-Encoder::Encoder(int pinEnc_1channel, int pinEnc_2channel, String tag){
+Encoder::Encoder(int pinEnc_1channel, int pinEnc_2channel, char * tag, int correction_factor_direction){
     this->direction_enc = 0;
     this->pinEnc_1channel = pinEnc_1channel;
     this->pinEnc_2channel = pinEnc_2channel;
@@ -35,6 +35,7 @@ Encoder::Encoder(int pinEnc_1channel, int pinEnc_2channel, String tag){
     this->timeEncBef = 0;
     this->last_sensed_speed = 0;
     this->tag = tag;
+    this->correction_factor_direction = correction_factor_direction;
 };
 int Encoder::getPinOfInterrupt(){
   return this->pinEnc_1channel;
@@ -61,12 +62,12 @@ void  Encoder::encoderFunction(){
   if ( digitalRead(this->pinEnc_2channel) == LOW ) {
     this->direction_enc = -1;
   }
-  this->timeEncDiference = float(this->timeEncNow-this->timeEncBef)*this->direction_enc;
+  this->timeEncDiference = float(this->timeEncNow-this->timeEncBef) * this->direction_enc;
   this->timeEncBef=this->timeEncNow;
 };
 
 float Encoder::sense_speed(){  
-  this->last_sensed_speed = 1041.66666667 / this->timeEncDiference;
+  this->last_sensed_speed = ((float)this->correction_factor_direction)*(1041.66666667 / this->timeEncDiference);
   sample();  
   return this->last_sensed_speed;
 }
