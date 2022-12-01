@@ -47,8 +47,8 @@ class CustomedSerial
 };
 
 CustomedSerial::CustomedSerial(/* args */){
-  this->queue_rx_serial = xQueueCreate( 20, sizeof(char *));
-  this->queue_tx_serial = xQueueCreate( 20, sizeof(char *));
+  this->queue_rx_serial = xQueueCreate( 100, sizeof(char *));
+  this->queue_tx_serial = xQueueCreate( 100, sizeof(char *));
 }
 
 void CustomedSerial::mainTask(){

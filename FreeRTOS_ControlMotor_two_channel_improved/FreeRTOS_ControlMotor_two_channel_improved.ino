@@ -1,16 +1,9 @@
 // Include Arduino FreeRTOS library
 #include <Arduino_FreeRTOS.h>
-
-// Include mutex support
 #include <semphr.h>
-// Include queue support
 #include <queue.h>
-//#include "Encoder.h"
 #include "Motor.h"
 #include "CommandHandler.h"
-//#include "Car.h"
-//#include "TrackRoute.h"
-//#include "CustomedSerial.h"
 
 extern HardwareSerial Serial2;
 
@@ -119,15 +112,15 @@ void setup() {
   while(!Serial);
 
   delay(10);
-  Serial2.println("starting...");
-  Serial.println("starting...");
+  Serial2.println("xtarting...");
+  Serial.println("xtarting...");
   // Se definen las tareas a realizar
   xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 256, NULL, 0, NULL);
   //xTaskCreate(CharCommunication_thread, "Task-1", 256, NULL, 0, NULL);
-  xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
-  xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
-  xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
-  xTaskCreate(Plot_thread, "Task3", 256, NULL, 1, NULL);
+  xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 1, NULL);
+  //xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
+  //xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
+  //xTaskCreate(Plot_thread, "Task3", 256, NULL, 1, NULL);
   //vTaskStartScheduler();
 }
 
@@ -147,13 +140,13 @@ void interrupt_MB(){
 void CharCommunication_mainTask_thread(void* pvParameters) {
   while (1) {
     customedSerial.mainTask();
+    commandHandler.receiveCommandString();
   }
 }
 
 //Rutina manejo de mensagjes
 void CharCommunication_thread(void* pvParameters) {
   while (1) {
-    
     if(customedSerial.available()){
       Serial.print(customedSerial.read());
     }
@@ -169,6 +162,7 @@ void CommandHandler_thread(void* pvParameters) {
   TickType_t delayTime = *((TickType_t*)pvParameters); // Use task parameters to define delay
   while (1) {
     commandHandler.handleCommand();
+    vTaskDelay(16 / portTICK_PERIOD_MS);
   }
 }
 

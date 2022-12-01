@@ -6,7 +6,7 @@
 #include "Command.h"
 #include "TrackRoute.h"
 
-#define RX_SIZE 200
+#define RX_SIZE 150
 
 typedef struct {
   uint8_t msg[RX_SIZE];
@@ -42,7 +42,7 @@ class CommandHandler{
         void disablePIDB();
         bool getEnablePIDB();
     private:
-        uint8_t rxBuffer;
+        char rxBuffer;
         uint8_t cnt_rx;
         uint8_t state_rx;
         queue_commandRx queueCommandRx;
@@ -67,7 +67,7 @@ CommandHandler::CommandHandler(Encoder* e_A, Encoder* e_B, Motor* ma, Motor* mb,
   this->command = Command();
   this->queue_commands_serial = xQueueCreate( 3, sizeof(queue_commandRx));
   this->trackRoute_pointer = tr;
-  this->enable_echo_command = false;
+  this->enable_echo_command = true;
   this->enable_plot = false;
   this->enable_PID_A = true;
   this->enable_PID_B = true;
@@ -78,11 +78,14 @@ CommandHandler::CommandHandler(Encoder* e_A, Encoder* e_B, Motor* ma, Motor* mb,
 };
 
 void CommandHandler::handleCommand(){
-  receiveCommandString();     
+  //receiveCommandString();
+  //customedSerial.println(".");     
   if(xQueueReceive(queue_commands_serial, &queueCommandRx, 0) == pdPASS ){
+    customedSerial.println("1_____");
     convertCommandString2Command(queueCommandRx.msg, &command);
     if(enable_echo_command) printReceievedCommand(&command);
-    InterpretateCommand(&command);
+    //InterpretateCommand(&command);
+    customedSerial.println("2_____");
   }
 }
 
@@ -90,11 +93,11 @@ void CommandHandler::receiveCommandString(){
   if (customedSerial.available()) {
       rxBuffer = customedSerial.read();
       //Serial.write(rxBuffer);
-      
+      //customedSerial.print(rxBuffer);
       if (rxBuffer == '$' && state_rx==0) { // start of command
         cnt_rx = 0;
         state_rx=1;
-        memset(queueCommandRx.msg, 0, sizeof queueCommandRx.msg); // reset data
+        //memset(queueCommandRx.msg, 0, sizeof queueCommandRx.msg); // reset data
       }
       else if ((cnt_rx > (RX_SIZE - 1))&&(state_rx==1)) { // corrupted/wrong input (lack of end character)
         state_rx=0;
@@ -103,15 +106,15 @@ void CommandHandler::receiveCommandString(){
         if(state_rx==1){
           queueCommandRx.msg[cnt_rx] = rxBuffer;
           queueCommandRx.len = cnt_rx+1;
-          xQueueSend(queue_commands_serial, &queueCommandRx, portMAX_DELAY);
+          xQueueSendFromISR(queue_commands_serial, &queueCommandRx, 0);
         }
         state_rx=0;
       }
 
       // store character
       if(state_rx==1){
-      queueCommandRx.msg[cnt_rx] = rxBuffer;
-      cnt_rx++;
+        queueCommandRx.msg[cnt_rx] = rxBuffer;
+        cnt_rx++;
       }   
     }
 };

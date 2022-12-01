@@ -56,11 +56,11 @@ class TrackRoute{
         int number_data_motion_dt; //set externally
         int number_data_motion; //set externally
         
-        float  wA_float_array[100]; //set externally
+        float  wA_float_array[50]; //set externally
         int wA_array_length; 
-        float  wB_float_array[100]; //set externally
+        float  wB_float_array[50]; //set externally
         int wB_array_length;
-        float  dt_float_array[100]; //set externally
+        float  dt_float_array[50]; //set externally
         int dt_array_length;
 
         int counter_motion_data;

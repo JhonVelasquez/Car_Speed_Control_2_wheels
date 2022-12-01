@@ -16,7 +16,7 @@ class Encoder{
         unsigned long timeEncBef;
         float last_sensed_speed;
 
-        float vector_sampling[100];
+        float vector_sampling[50];
         float size_of_sampling;
         int counter_sampling;
         int correction_factor_direction;
