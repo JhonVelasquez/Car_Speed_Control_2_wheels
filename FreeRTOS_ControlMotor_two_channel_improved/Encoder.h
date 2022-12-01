@@ -3,6 +3,7 @@
 
 
 #include "CustomedSerial.h"
+#include "DefineCustomed.h"
 extern CustomedSerial customedSerial;
 
 class Encoder{
@@ -16,7 +17,7 @@ class Encoder{
         unsigned long timeEncBef;
         float last_sensed_speed;
 
-        float vector_sampling[50];
+        float vector_sampling[LENGTH_SAMPLING_ENCODER_ARRAY_FLOAT];
         float size_of_sampling;
         int counter_sampling;
         int correction_factor_direction;

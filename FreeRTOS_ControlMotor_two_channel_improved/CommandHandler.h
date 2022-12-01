@@ -5,11 +5,12 @@
 #include <queue.h>
 #include "Command.h"
 #include "TrackRoute.h"
+#include "DefineCustomed.h"
 
 #define RX_SIZE 150
 
 typedef struct {
-  uint8_t msg[RX_SIZE];
+  uint8_t msg[LENGTH_QUEUE_COMMAND_MSG_ARRAY_CHAR];
   int len;
 } queue_commandRx;
 
@@ -65,7 +66,7 @@ class CommandHandler{
 CommandHandler::CommandHandler(Encoder* e_A, Encoder* e_B, Motor* ma, Motor* mb, TrackRoute* tr){
   this->state_rx = 0;
   this->command = Command();
-  this->queue_commands_serial = xQueueCreate( 3, sizeof(queue_commandRx));
+  this->queue_commands_serial = xQueueCreate( LENGTH_QUEUE_COMMAND, sizeof(queue_commandRx));
   this->trackRoute_pointer = tr;
   this->enable_echo_command = false;
   this->enable_plot = false;
@@ -97,7 +98,7 @@ void CommandHandler::receiveCommandString(){
         state_rx=1;
         //memset(queueCommandRx.msg, 0, sizeof queueCommandRx.msg); // reset data
       }
-      else if ((cnt_rx > (RX_SIZE - 1))&&(state_rx==1)) { // corrupted/wrong input (lack of end character)
+      else if ((cnt_rx > (MAX_LENGTH_CUSTOMED_SERIAL_CHAR_ARRAY_TO_SEND - 1))&&(state_rx==1)) { // corrupted/wrong input (lack of end character)
         state_rx=0;
       }
       else if (rxBuffer == ';') { // end of command detected

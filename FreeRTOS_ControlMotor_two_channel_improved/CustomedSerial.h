@@ -2,6 +2,7 @@
 #define CUSTOMED_SERIAL_
 
 #include <queue.h>
+#include "DefineCustomed.h"
 
 extern HardwareSerial Serial2;
 
@@ -47,8 +48,8 @@ class CustomedSerial
 };
 
 CustomedSerial::CustomedSerial(/* args */){
-  this->queue_rx_serial = xQueueCreate( 20, sizeof(char *));
-  this->queue_tx_serial = xQueueCreate( 20, sizeof(char *));
+  this->queue_rx_serial = xQueueCreate( LENGTH_CUSTOMED_SERIAL_QUEUETX_CHAR, sizeof(char *));
+  this->queue_tx_serial = xQueueCreate( LENGTH_CUSTOMED_SERIAL_QUEUETX_CHAR, sizeof(char *));
 }
 
 void CustomedSerial::mainTask(){
