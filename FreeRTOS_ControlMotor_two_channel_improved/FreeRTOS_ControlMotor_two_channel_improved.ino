@@ -112,14 +112,13 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
 
-  // Se definen las tareas a realizar
+  // Tasks are defined
   xTaskCreate(CharCommunication_mainTask_thread, "Task-1", 512, NULL, 0, NULL);
   //xTaskCreate(Test_thread, "Task-1", 256, NULL, 0, NULL);
   xTaskCreate(CommandHandler_thread, "Task2", 256, NULL, 0, NULL);
   xTaskCreate(ControlMotors_thread, "Task4", 256, NULL, 3 , NULL);
   xTaskCreate(TrackRoute_thread, "Task1", 256, NULL, 2, NULL);
   xTaskCreate(Plot_thread, "Task3", 256, NULL, 1, NULL);
-  //vTaskStartScheduler();
 }
 
 void loop() {
@@ -134,7 +133,7 @@ void interrupt_MB(){
   encoder_MB.encoderFunction();
 }
 
-//Rutina manejo de mensagjes
+//Rutina manejo de mensajes
 void CharCommunication_mainTask_thread(void* pvParameters) {
   while (1) {
     customedSerial.mainTask();

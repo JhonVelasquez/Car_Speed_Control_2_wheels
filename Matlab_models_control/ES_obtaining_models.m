@@ -21,8 +21,8 @@ hold off
 legend('y_MA','y_MB','step_voltage');
 
 
-tf_MA=load("ES_transfer_models_A_B_fit45.mat").tf_MA;
-tf_MB=load("ES_transfer_models_A_B_fit45.mat").tf_MB;
+tf_MA=load("ES_transfer_models_A_B_fit45.mat").tf_MA*5;
+tf_MB=load("ES_transfer_models_A_B_fit45.mat").tf_MB*5;
 
 figure,
 step(tf_MA);
